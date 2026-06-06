@@ -34,6 +34,15 @@ const groups = [...new Set(NAV_ITEMS.map(i => i.group))];
 export default function App() {
   const [section, setSection] = useState<Section>("dashboard");
   const [collapsed, setCollapsed] = useState(false);
+  const [isDark, setIsDark] = useState(true);
+
+  const toggleTheme = () => {
+    setIsDark(prev => {
+      const next = !prev;
+      document.documentElement.classList.toggle("light", !next);
+      return next;
+    });
+  };
 
   const ActivePage = SECTION_COMPONENTS[section];
   const activeItem = NAV_ITEMS.find(i => i.id === section);
@@ -139,6 +148,14 @@ export default function App() {
                 />
                 <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-dim font-mono">⌘K</span>
               </div>
+
+              <button
+                onClick={toggleTheme}
+                title={isDark ? "Светлая тема" : "Тёмная тема"}
+                className="w-8 h-8 flex items-center justify-center rounded border border-line bg-surface-2 text-dim hover:text-foreground transition-colors"
+              >
+                <Icon name={isDark ? "Sun" : "Moon"} size={14} />
+              </button>
 
               <button className="relative w-8 h-8 flex items-center justify-center rounded border border-line bg-surface-2 text-dim hover:text-foreground transition-colors">
                 <Icon name="Bell" size={14} />

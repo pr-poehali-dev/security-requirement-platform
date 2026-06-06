@@ -60,6 +60,61 @@
     --text-dim: 210 10% 42%;
     --line: 220 14% 18%;
   }
+
+  /* Светлая тема */
+  .light {
+    --background: 210 20% 97%;
+    --foreground: 220 25% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 25% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 25% 12%;
+
+    --primary: 38 90% 44%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 16% 92%;
+    --secondary-foreground: 220 25% 12%;
+
+    --muted: 210 16% 94%;
+    --muted-foreground: 215 12% 48%;
+
+    --accent: 200 70% 42%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 70% 48%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 215 18% 86%;
+    --input: 215 18% 86%;
+    --ring: 38 90% 44%;
+
+    --sidebar-background: 220 20% 94%;
+    --sidebar-foreground: 220 20% 30%;
+    --sidebar-primary: 38 90% 44%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 16% 88%;
+    --sidebar-accent-foreground: 220 20% 18%;
+    --sidebar-border: 215 16% 84%;
+    --sidebar-ring: 38 90% 44%;
+
+    --surface-1: 0 0% 100%;
+    --surface-2: 210 18% 95%;
+    --surface-3: 210 16% 90%;
+    --amber: 38 90% 44%;
+    --amber-dim: 38 70% 60%;
+    --steel: 200 60% 38%;
+    --steel-dim: 200 40% 55%;
+    --success: 145 55% 36%;
+    --warning: 38 90% 44%;
+    --danger: 0 65% 48%;
+    --text-primary: 220 25% 12%;
+    --text-secondary: 215 14% 42%;
+    --text-dim: 215 10% 58%;
+    --line: 215 18% 86%;
+  }
 }
 
 @layer base {
