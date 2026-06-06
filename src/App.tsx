@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Icon from "@/components/ui/icon";
@@ -32,19 +32,36 @@ const SECTION_COMPONENTS: Record<Section, React.FC> = {
 const groups = [...new Set(NAV_ITEMS.map(i => i.group))];
 
 export default function App() {
-  const [section, setSection] = useState<Section>("dashboard");
-  const [collapsed, setCollapsed] = useState(false);
-  const [isDark, setIsDark] = useState(true);
+  const [section, setSection] = useState<Section>(() => {
+    return (localStorage.getItem("secarch_section") as Section) || "dashboard";
+  });
+  const [collapsed, setCollapsed] = useState(() => {
+    return localStorage.getItem("secarch_collapsed") === "true";
+  });
+  const [isDark, setIsDark] = useState(() => {
+    const saved = localStorage.getItem("secarch_theme");
+    const dark = saved !== null ? saved === "dark" : true;
+    document.documentElement.classList.toggle("light", !dark);
+    return dark;
+  });
+
+  useEffect(() => {
+    localStorage.setItem("secarch_section", section);
+  }, [section]);
+
+  useEffect(() => {
+    localStorage.setItem("secarch_collapsed", String(collapsed));
+  }, [collapsed]);
 
   const toggleTheme = () => {
     setIsDark(prev => {
       const next = !prev;
       document.documentElement.classList.toggle("light", !next);
+      localStorage.setItem("secarch_theme", next ? "dark" : "light");
       return next;
     });
   };
 
-  const ActivePage = SECTION_COMPONENTS[section];
   const activeItem = NAV_ITEMS.find(i => i.id === section);
 
   return (
@@ -176,9 +193,16 @@ export default function App() {
             </div>
           </header>
 
-          {/* Page content */}
-          <main className="flex-1 overflow-auto p-6" key={section}>
-            <ActivePage />
+          {/* Page content — все страницы рендерятся один раз, неактивные скрыты */}
+          <main className="flex-1 overflow-auto p-6">
+            {(Object.keys(SECTION_COMPONENTS) as Section[]).map(id => {
+              const Page = SECTION_COMPONENTS[id];
+              return (
+                <div key={id} style={{ display: section === id ? "block" : "none" }} className="h-full">
+                  <Page />
+                </div>
+              );
+            })}
           </main>
         </div>
       </div>
