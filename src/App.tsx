@@ -8,14 +8,16 @@ import Architectures from "@/pages/Architectures";
 import Templates from "@/pages/Templates";
 import Users from "@/pages/Users";
 import Settings from "@/pages/Settings";
+import OrgDomains from "@/pages/OrgDomains";
 
-type Section = "dashboard" | "requirements" | "architectures" | "templates" | "users" | "settings";
+type Section = "dashboard" | "requirements" | "architectures" | "templates" | "orgdomains" | "users" | "settings";
 
 const NAV_ITEMS: { id: Section; label: string; icon: string; group: string }[] = [
   { id: "dashboard", label: "Обзор", icon: "LayoutDashboard", group: "Платформа" },
   { id: "requirements", label: "Требования", icon: "FileText", group: "Управление" },
   { id: "architectures", label: "Архитектуры", icon: "Network", group: "Управление" },
   { id: "templates", label: "Шаблоны", icon: "LayoutTemplate", group: "Управление" },
+  { id: "orgdomains", label: "Орг. домены", icon: "Building", group: "Управление" },
   { id: "users", label: "Пользователи", icon: "Users", group: "Администрирование" },
   { id: "settings", label: "Настройки", icon: "Settings", group: "Администрирование" },
 ];
@@ -25,6 +27,7 @@ const SECTION_COMPONENTS: Record<Section, React.FC> = {
   requirements: Requirements,
   architectures: Architectures,
   templates: Templates,
+  orgdomains: OrgDomains,
   users: Users,
   settings: Settings,
 };
