@@ -7,7 +7,7 @@ import Dashboard from "@/pages/Dashboard";
 import Requirements from "@/pages/Requirements";
 import Architectures from "@/pages/Architectures";
 import Templates from "@/pages/Templates";
-import OrgDomains from "@/pages/OrgDomains";
+import { OrgDomainsList, OrgDomainCard } from "@/pages/OrgDomains";
 import { TechDomainsList, TechDomainCard } from "@/pages/TechDomains";
 import Users from "@/pages/Users";
 import Settings from "@/pages/Settings";
@@ -193,7 +193,8 @@ function Shell() {
             <Route path="/requirements"  element={<Requirements />} />
             <Route path="/architectures" element={<Architectures />} />
             <Route path="/templates"     element={<Templates />} />
-            <Route path="/orgdomains"    element={<OrgDomains />} />
+            <Route path="/orgdomains"      element={<OrgDomainsList />} />
+            <Route path="/orgdomains/:id"  element={<OrgDomainCard />} />
             <Route path="/techdomains"   element={<TechDomainsList />} />
             <Route path="/techdomains/:id" element={<TechDomainCard />} />
             <Route path="/users"         element={<Users />} />
