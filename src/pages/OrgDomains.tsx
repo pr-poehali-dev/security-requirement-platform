@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Icon from "@/components/ui/icon";
+import ConfirmDeleteDialog from "@/components/ui/confirm-delete-dialog";
 import { orgDomainsStore, type DomainStatus } from "@/data/orgDomainsStore";
+import { userStore } from "@/data/userStore";
 
 const STATUS_OPTIONS: { value: DomainStatus; label: string }[] = [
   { value: "active",   label: "Активен" },
@@ -23,14 +25,22 @@ function useStore() {
   return orgDomainsStore.get();
 }
 
+function useUser() {
+  const [, tick] = useState(0);
+  useState(() => { userStore.sub(() => tick(n => n + 1)); });
+  return userStore.get();
+}
+
 // ────────────────────────────────────────────
 // Список
 // ────────────────────────────────────────────
 export function OrgDomainsList() {
   const navigate = useNavigate();
   const domains = useStore();
+  const user = useUser();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   const filtered = domains.filter(d => {
     const q = search.toLowerCase();
@@ -45,13 +55,29 @@ export function OrgDomainsList() {
     navigate(`/orgdomains/${newId}`);
   };
 
-  const handleDelete = (id: string, e: React.MouseEvent) => {
+  const handleDeleteClick = (id: string, name: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    orgDomainsStore.remove(id);
+    setDeleteTarget({ id, name });
   };
+
+  const confirmDelete = () => {
+    if (!deleteTarget) return;
+    orgDomainsStore.remove(deleteTarget.id);
+    setDeleteTarget(null);
+  };
+
+  const isAdmin = user.role === "admin";
 
   return (
     <div className="flex flex-col h-full">
+      <ConfirmDeleteDialog
+        open={!!deleteTarget}
+        title={deleteTarget?.name ?? ""}
+        description="Организационный домен будет удалён из реестра."
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
+
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-semibold text-foreground">Организационные домены</h1>
@@ -111,7 +137,7 @@ export function OrgDomainsList() {
               <th className="text-left py-2.5 px-3 text-xs font-medium text-dim uppercase tracking-wider w-28">Статус</th>
               <th className="text-left py-2.5 px-3 text-xs font-medium text-dim uppercase tracking-wider w-16">Версия</th>
               <th className="text-left py-2.5 px-3 text-xs font-medium text-dim uppercase tracking-wider w-36">Обновлён</th>
-              <th className="w-10" />
+              {isAdmin && <th className="w-10" />}
             </tr>
           </thead>
           <tbody>
@@ -133,19 +159,22 @@ export function OrgDomainsList() {
                 </td>
                 <td className="py-3 px-3"><span className="tag-info">v{d.version}</span></td>
                 <td className="py-3 px-3 text-dim text-xs font-mono">{d.updatedAt}</td>
-                <td className="py-3 px-3">
-                  <button
-                    onClick={e => handleDelete(d.id, e)}
-                    className="opacity-0 group-hover:opacity-100 text-dim hover:text-danger transition-all"
-                  >
-                    <Icon name="Trash2" size={13} />
-                  </button>
-                </td>
+                {isAdmin && (
+                  <td className="py-3 px-3">
+                    <button
+                      onClick={e => handleDeleteClick(d.id, d.name, e)}
+                      className="opacity-0 group-hover:opacity-100 text-dim hover:text-danger transition-all"
+                      title="Удалить"
+                    >
+                      <Icon name="Trash2" size={13} />
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={7} className="py-16 text-center text-dim text-sm">
+                <td colSpan={isAdmin ? 7 : 6} className="py-16 text-center text-dim text-sm">
                   <Icon name="SearchX" size={28} className="mx-auto mb-2 opacity-40" />
                   Домены не найдены
                 </td>
@@ -165,7 +194,9 @@ export function OrgDomainCard() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const domains = useStore();
+  const user = useUser();
   const domain = domains.find(d => d.id === id);
+  const isAdmin = user.role === "admin";
 
   const [edit, setEdit] = useState(() =>
     domain
@@ -173,6 +204,7 @@ export function OrgDomainCard() {
       : null
   );
   const [dirty, setDirty] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   if (!domain || !edit) {
     return (
@@ -202,13 +234,21 @@ export function OrgDomainCard() {
     setDirty(false);
   };
 
-  const handleDelete = () => {
+  const confirmDelete = () => {
     orgDomainsStore.remove(domain.id);
     navigate("/orgdomains");
   };
 
   return (
     <div className="flex flex-col h-full">
+      <ConfirmDeleteDialog
+        open={deleteOpen}
+        title={domain.name}
+        description="Организационный домен будет удалён из реестра."
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteOpen(false)}
+      />
+
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm mb-6">
         <button
@@ -227,7 +267,6 @@ export function OrgDomainCard() {
       <div className="flex-1 overflow-auto">
         <div className="max-w-2xl space-y-5">
 
-          {/* ID */}
           <div>
             <label className="text-xs text-dim block mb-1.5 uppercase tracking-wider">ID</label>
             <div className="px-3 py-2 bg-surface-1 border border-line rounded text-sm font-mono text-dim select-all cursor-default">
@@ -235,7 +274,6 @@ export function OrgDomainCard() {
             </div>
           </div>
 
-          {/* Название */}
           <div>
             <label className="text-xs text-dim block mb-1.5 uppercase tracking-wider">Название</label>
             <input
@@ -246,7 +284,6 @@ export function OrgDomainCard() {
             />
           </div>
 
-          {/* Версия */}
           <div>
             <label className="text-xs text-dim block mb-1.5 uppercase tracking-wider">Версия</label>
             <div className="flex items-center gap-3">
@@ -257,7 +294,6 @@ export function OrgDomainCard() {
             </div>
           </div>
 
-          {/* Владелец */}
           <div>
             <label className="text-xs text-dim block mb-1.5 uppercase tracking-wider">Владелец</label>
             <input
@@ -268,7 +304,6 @@ export function OrgDomainCard() {
             />
           </div>
 
-          {/* Статус */}
           <div>
             <label className="text-xs text-dim block mb-1.5 uppercase tracking-wider">Статус</label>
             <div className="grid grid-cols-2 gap-2">
@@ -291,7 +326,6 @@ export function OrgDomainCard() {
             </div>
           </div>
 
-          {/* Описание */}
           <div>
             <label className="text-xs text-dim block mb-1.5 uppercase tracking-wider">Описание</label>
             <textarea
@@ -303,12 +337,10 @@ export function OrgDomainCard() {
             />
           </div>
 
-          {/* Meta */}
           <div className="text-xs text-dim pt-2 border-t border-line">
             Последнее обновление: <span className="font-mono">{domain.updatedAt}</span>
           </div>
 
-          {/* Actions */}
           <div className="flex gap-2 pb-6">
             <button
               onClick={handleSave}
@@ -325,13 +357,20 @@ export function OrgDomainCard() {
             >
               Сбросить
             </button>
-            <button
-              onClick={handleDelete}
-              className="ml-auto px-4 py-2 text-sm bg-surface-1 border border-line rounded text-dim hover:text-danger hover:border-danger/30 transition-colors flex items-center gap-2"
-            >
-              <Icon name="Trash2" size={14} />
-              Удалить
-            </button>
+            {isAdmin ? (
+              <button
+                onClick={() => setDeleteOpen(true)}
+                className="ml-auto px-4 py-2 text-sm bg-surface-1 border border-line rounded text-dim hover:text-danger hover:border-danger/30 transition-colors flex items-center gap-2"
+              >
+                <Icon name="Trash2" size={14} />
+                Удалить
+              </button>
+            ) : (
+              <div className="ml-auto flex items-center gap-1.5 text-xs text-dim px-3">
+                <Icon name="Lock" size={12} />
+                Удаление доступно только администратору
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -339,5 +378,4 @@ export function OrgDomainCard() {
   );
 }
 
-// default export для обратной совместимости
 export default OrgDomainsList;
