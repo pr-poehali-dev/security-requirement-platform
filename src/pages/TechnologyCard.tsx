@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import Icon from "@/components/ui/icon";
 import ConfirmDeleteDialog from "@/components/ui/confirm-delete-dialog";
-import { technologiesApi, type TechDetail } from "@/api/technologies";
+import { technologiesApi, type Technology as TechDetail } from "@/api/index";
 import { userStore } from "@/data/userStore";
 
 const STATUS_OPTIONS = [
@@ -144,7 +144,8 @@ export default function TechnologyCard() {
   };
 
   const removeTag = async (tagId: number) => {
-    await technologiesApi.removeTag(tagId);
+    if (!id) return;
+    await technologiesApi.removeTag(id, tagId);
     load();
   };
 
@@ -152,7 +153,7 @@ export default function TechnologyCard() {
   const saveMermaid = async () => {
     if (!id) return;
     if (mermaidEditId !== null) {
-      await technologiesApi.updateMermaid(mermaidEditId, mermaidTitle, mermaidContent);
+      await technologiesApi.updateMermaid(id, mermaidEditId, mermaidTitle, mermaidContent);
     } else {
       await technologiesApi.addMermaid(id, mermaidTitle, mermaidContent);
     }
@@ -163,7 +164,8 @@ export default function TechnologyCard() {
   };
 
   const deleteMermaid = async (mId: number) => {
-    await technologiesApi.deleteMermaid(mId);
+    if (!id) return;
+    await technologiesApi.deleteMermaid(id, mId);
     load();
   };
 
@@ -181,7 +183,8 @@ export default function TechnologyCard() {
   };
 
   const deleteFile = async (fileId: number) => {
-    await technologiesApi.deleteFile(fileId);
+    if (!id) return;
+    await technologiesApi.deleteFile(id, fileId);
     load();
   };
 

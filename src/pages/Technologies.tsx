@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Icon from "@/components/ui/icon";
 import ConfirmDeleteDialog from "@/components/ui/confirm-delete-dialog";
-import { technologiesApi, type TechItem } from "@/api/technologies";
+import { technologiesApi, type Technology as TechItem } from "@/api/index";
 import { userStore } from "@/data/userStore";
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
@@ -135,7 +135,7 @@ export default function Technologies() {
             <tbody>
               {filtered.map((t, i) => {
                 const meta = STATUS_META[t.status] ?? STATUS_META.inactive;
-                const tags = Array.isArray(t.tags) ? t.tags as string[] : [];
+                const tags = Array.isArray(t.tags) ? t.tags.map((x: string | { tag: string }) => typeof x === "string" ? x : x.tag) : [];
                 return (
                   <tr
                     key={t.id}

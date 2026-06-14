@@ -1,0 +1,151 @@
+version: "3.9"
+
+services:
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    profiles: ["postgres"]
+    environment:
+      POSTGRES_USER: secarch
+      POSTGRES_PASSWORD: secarch
+      POSTGRES_DB: secarch
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U secarch"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal
+
+  # ── MinIO (S3-совместимое хранилище) ───────────────────────────────────────
+  minio:
+    image: minio/minio:latest
+    profiles: ["postgres", "sqlite"]
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9001:9001"   # MinIO Console
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  # ── MinIO bucket init ───────────────────────────────────────────────────────
+  minio-init:
+    image: minio/mc:latest
+    profiles: ["postgres", "sqlite"]
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+        mc alias set local http://minio:9000 minioadmin minioadmin;
+        mc mb --ignore-existing local/secarch;
+        mc anonymous set public local/secarch;
+        exit 0;
+      "
+    networks:
+      - internal
+
+  # ── FastAPI (SQLite режим — по умолчанию) ──────────────────────────────────
+  api-sqlite:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    profiles: ["sqlite"]
+    environment:
+      DB_TYPE: sqlite
+      DATABASE_URL: sqlite:////data/secarch.db
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_BUCKET: secarch
+      S3_PUBLIC_URL: http://localhost:9000/secarch
+    volumes:
+      - sqlite_data:/data
+      - ./api:/app
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal
+
+  # ── FastAPI (PostgreSQL режим) ──────────────────────────────────────────────
+  api-postgres:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    profiles: ["postgres"]
+    environment:
+      DB_TYPE: postgresql
+      DATABASE_URL: postgresql://secarch:secarch@postgres:5432/secarch
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_BUCKET: secarch
+      S3_PUBLIC_URL: http://localhost:9000/secarch
+    volumes:
+      - ./api:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal
+
+  # ── Frontend + Nginx (SQLite) ───────────────────────────────────────────────
+  frontend-sqlite:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    profiles: ["sqlite"]
+    ports:
+      - "3000:80"
+    depends_on:
+      api-sqlite:
+        condition: service_healthy
+    networks:
+      - internal
+
+  # ── Frontend + Nginx (PostgreSQL) ──────────────────────────────────────────
+  frontend-postgres:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    profiles: ["postgres"]
+    ports:
+      - "3000:80"
+    depends_on:
+      api-postgres:
+        condition: service_healthy
+    networks:
+      - internal
+
+volumes:
+  postgres_data:
+  sqlite_data:
+  minio_data:
+
+networks:
+  internal:
+    driver: bridge
