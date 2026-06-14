@@ -369,7 +369,7 @@ export function TechDomainCard() {
         </button>
         <Icon name="ChevronRight" size={13} className="text-dim" />
         <span className="font-mono text-xs text-steel">{domain.id}</span>
-        <span className="tag-info">v{displayVersion}</span>
+        <span className="tag-info">v{domain.version}</span>
         {dirty && <span className="tag-medium">Несохранено</span>}
       </div>
 
