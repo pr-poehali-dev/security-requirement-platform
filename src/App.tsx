@@ -9,6 +9,8 @@ import Architectures from "@/pages/Architectures";
 import Templates from "@/pages/Templates";
 import { OrgDomainsList, OrgDomainCard } from "@/pages/OrgDomains";
 import { TechDomainsList, TechDomainCard } from "@/pages/TechDomains";
+import Technologies from "@/pages/Technologies";
+import TechnologyCard from "@/pages/TechnologyCard";
 import Users from "@/pages/Users";
 import Settings from "@/pages/Settings";
 import { userStore, type UserRole } from "@/data/userStore";
@@ -20,6 +22,7 @@ const NAV_ITEMS: { path: string; label: string; icon: string; group: string }[] 
   { path: "/templates",     label: "Шаблоны",          icon: "LayoutTemplate",  group: "Управление" },
   { path: "/orgdomains",    label: "Орг. домены",      icon: "Building",        group: "Управление" },
   { path: "/techdomains",   label: "Тех. домены",      icon: "Server",          group: "Управление" },
+  { path: "/technologies",  label: "Технологии",       icon: "Cpu",             group: "Управление" },
   { path: "/users",         label: "Пользователи",     icon: "Users",           group: "Администрирование" },
   { path: "/settings",      label: "Настройки",        icon: "Settings",        group: "Администрирование" },
 ];
@@ -245,7 +248,9 @@ function Shell() {
             <Route path="/orgdomains/:id"  element={<OrgDomainCard />} />
             <Route path="/techdomains"   element={<TechDomainsList />} />
             <Route path="/techdomains/:id" element={<TechDomainCard />} />
-            <Route path="/users"         element={<Users />} />
+            <Route path="/technologies"     element={<Technologies />} />
+            <Route path="/technologies/:id" element={<TechnologyCard />} />
+            <Route path="/users"            element={<Users />} />
             <Route path="/settings"      element={<Settings />} />
           </Routes>
         </main>
