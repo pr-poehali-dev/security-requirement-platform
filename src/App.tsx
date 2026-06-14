@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { HashRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Icon from "@/components/ui/icon";
@@ -208,11 +208,11 @@ function Shell() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <TooltipProvider>
         <Toaster />
         <Shell />
       </TooltipProvider>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
