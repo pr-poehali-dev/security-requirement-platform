@@ -1,7 +1,5 @@
 import { useState } from "react";
 import Icon from "@/components/ui/icon";
-import ConfirmDeleteDialog from "@/components/ui/confirm-delete-dialog";
-import { userStore } from "@/data/userStore";
 
 const TEMPLATES = [
   {
@@ -76,38 +74,16 @@ const complexityLabel = (c: string) => ({ high: "Сложный", medium: "Ср�
 const complexityClass = (c: string) => ({ high: "tag-critical", medium: "tag-medium", low: "tag-low" }[c] || "tag-info");
 
 export default function Templates() {
-  const [items, setItems] = useState(TEMPLATES);
   const [selected, setSelected] = useState<typeof TEMPLATES[0] | null>(null);
   const [search, setSearch] = useState("");
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
-  const isAdmin = userStore.get().role === "admin";
 
-  const filtered = items.filter(t =>
+  const filtered = TEMPLATES.filter(t =>
     t.title.toLowerCase().includes(search.toLowerCase()) ||
     t.category.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleDeleteClick = (id: string, title: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setDeleteTarget({ id, title });
-  };
-
-  const confirmDelete = () => {
-    if (!deleteTarget) return;
-    setItems(prev => prev.filter(t => t.id !== deleteTarget.id));
-    if (selected?.id === deleteTarget.id) setSelected(null);
-    setDeleteTarget(null);
-  };
-
   return (
     <div className="flex flex-col h-full">
-      <ConfirmDeleteDialog
-        open={!!deleteTarget}
-        title={deleteTarget?.title ?? ""}
-        description="Шаблон будет удалён из реестра."
-        onConfirm={confirmDelete}
-        onCancel={() => setDeleteTarget(null)}
-      />
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-semibold text-foreground">Шаблоны</h1>
@@ -135,18 +111,9 @@ export default function Templates() {
             <div
               key={tpl.id}
               onClick={() => setSelected(selected?.id === tpl.id ? null : tpl)}
-              className={`bg-surface-1 border rounded p-5 cursor-pointer transition-all group animate-fade-in relative ${selected?.id === tpl.id ? "border-amber/50 glow-amber" : "border-line hover:border-amber/30"}`}
+              className={`bg-surface-1 border rounded p-5 cursor-pointer transition-all group animate-fade-in ${selected?.id === tpl.id ? "border-amber/50 glow-amber" : "border-line hover:border-amber/30"}`}
               style={{ animationDelay: `${i * 0.06}s`, opacity: 0 }}
             >
-              {isAdmin && (
-                <button
-                  onClick={e => handleDeleteClick(tpl.id, tpl.title, e)}
-                  className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 text-dim hover:text-danger transition-all z-10"
-                  title="Удалить"
-                >
-                  <Icon name="Trash2" size={13} />
-                </button>
-              )}
               <div className="flex items-start gap-3 mb-3">
                 <div className="w-9 h-9 rounded bg-surface-2 border border-line flex items-center justify-center shrink-0 group-hover:border-amber/30 transition-colors">
                   <Icon name={tpl.icon as "Building2"} size={18} className="text-amber" />
@@ -234,15 +201,6 @@ export default function Templates() {
               <button className="px-4 py-2 text-xs bg-surface-2 border border-line rounded text-foreground hover:border-amber/40 transition-colors">
                 Клонировать
               </button>
-              {isAdmin && (
-                <button
-                  onClick={e => handleDeleteClick(selected.id, selected.title, e)}
-                  className="px-4 py-2 text-xs bg-surface-2 border border-line rounded text-dim hover:text-danger hover:border-danger/30 transition-colors flex items-center gap-1.5"
-                >
-                  <Icon name="Trash2" size={13} />
-                  Удалить
-                </button>
-              )}
             </div>
           </div>
         )}

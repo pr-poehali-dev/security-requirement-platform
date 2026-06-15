@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { HashRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Icon from "@/components/ui/icon";
@@ -7,13 +7,10 @@ import Dashboard from "@/pages/Dashboard";
 import Requirements from "@/pages/Requirements";
 import Architectures from "@/pages/Architectures";
 import Templates from "@/pages/Templates";
-import { OrgDomainsList, OrgDomainCard } from "@/pages/OrgDomains";
+import OrgDomains from "@/pages/OrgDomains";
 import { TechDomainsList, TechDomainCard } from "@/pages/TechDomains";
-import Technologies from "@/pages/Technologies";
-import TechnologyCard from "@/pages/TechnologyCard";
 import Users from "@/pages/Users";
 import Settings from "@/pages/Settings";
-import { userStore, type UserRole } from "@/data/userStore";
 
 const NAV_ITEMS: { path: string; label: string; icon: string; group: string }[] = [
   { path: "/",              label: "Обзор",            icon: "LayoutDashboard", group: "Платформа" },
@@ -22,7 +19,6 @@ const NAV_ITEMS: { path: string; label: string; icon: string; group: string }[] 
   { path: "/templates",     label: "Шаблоны",          icon: "LayoutTemplate",  group: "Управление" },
   { path: "/orgdomains",    label: "Орг. домены",      icon: "Building",        group: "Управление" },
   { path: "/techdomains",   label: "Тех. домены",      icon: "Server",          group: "Управление" },
-  { path: "/technologies",  label: "Технологии",       icon: "Cpu",             group: "Управление" },
   { path: "/users",         label: "Пользователи",     icon: "Users",           group: "Администрирование" },
   { path: "/settings",      label: "Настройки",        icon: "Settings",        group: "Администрирование" },
 ];
@@ -41,20 +37,6 @@ function Shell() {
     return dark;
   });
 
-  // user store
-  const [user, setUser] = useState(() => userStore.get());
-  const [roleMenuOpen, setRoleMenuOpen] = useState(false);
-  const roleMenuRef = useRef<HTMLDivElement>(null);
-  useEffect(() => userStore.sub(() => setUser(userStore.get())), []);
-  useEffect(() => {
-    if (!roleMenuOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (roleMenuRef.current && !roleMenuRef.current.contains(e.target as Node)) setRoleMenuOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [roleMenuOpen]);
-
   useEffect(() => { localStorage.setItem("secarch_collapsed", String(collapsed)); }, [collapsed]);
 
   const toggleTheme = () => {
@@ -64,11 +46,6 @@ function Shell() {
       localStorage.setItem("secarch_theme", next ? "dark" : "light");
       return next;
     });
-  };
-
-  const switchRole = (role: UserRole) => {
-    userStore.setRole(role);
-    setRoleMenuOpen(false);
   };
 
   // активный пункт — точное совпадение или начало пути
@@ -195,42 +172,14 @@ function Shell() {
               <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber animate-pulse-amber" />
             </button>
 
-            <div className="relative pl-3 border-l border-line" ref={roleMenuRef}>
-              <button
-                onClick={() => setRoleMenuOpen(o => !o)}
-                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-                title="Сменить роль"
-              >
-                <div className="w-7 h-7 rounded-full bg-surface-3 border border-amber/30 flex items-center justify-center text-xs font-semibold text-amber">
-                  {user.initials}
-                </div>
-                <div className="hidden md:block text-left">
-                  <div className="text-xs font-medium text-foreground leading-tight">{user.name}</div>
-                  <div className="flex items-center gap-1 text-xs leading-tight">
-                    {user.role === "admin"
-                      ? <span className="text-amber">Администратор</span>
-                      : <span className="text-dim">Пользователь</span>
-                    }
-                    <Icon name="ChevronDown" size={10} className="text-dim" />
-                  </div>
-                </div>
-              </button>
-
-              {roleMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-52 bg-surface-1 border border-line rounded shadow-xl z-50 overflow-hidden animate-fade-in">
-                  <div className="px-3 py-2 border-b border-line">
-                    <p className="text-xs text-dim">Текущая роль</p>
-                  </div>
-                  {(["admin", "user"] as UserRole[]).map(role => (
-                    <button
-                      key={role}
-                      onClick={() => switchRole(role)}
-                      className={`w-full flex items-center justify-between px-3 py-2.5 text-sm transition-colors hover:bg-surface-2 ${user.role === role ? "text-amber" : "text-sec"}`}
-                    >
-                      <span>{role === "admin" ? "Администратор" : "Пользователь"}</span>
-                      {user.role === role && <Icon name="Check" size={13} className="text-amber" />}
-                    </button>
-                  ))}
+            <div className="flex items-center gap-2 pl-3 border-l border-line">
+              <div className="w-7 h-7 rounded-full bg-surface-3 border border-amber/30 flex items-center justify-center text-xs font-semibold text-amber">
+                АП
+              </div>
+              {!collapsed && (
+                <div className="hidden md:block">
+                  <div className="text-xs font-medium text-foreground leading-tight">А. Петров</div>
+                  <div className="text-xs text-dim leading-tight">Администратор</div>
                 </div>
               )}
             </div>
@@ -244,13 +193,10 @@ function Shell() {
             <Route path="/requirements"  element={<Requirements />} />
             <Route path="/architectures" element={<Architectures />} />
             <Route path="/templates"     element={<Templates />} />
-            <Route path="/orgdomains"      element={<OrgDomainsList />} />
-            <Route path="/orgdomains/:id"  element={<OrgDomainCard />} />
+            <Route path="/orgdomains"    element={<OrgDomains />} />
             <Route path="/techdomains"   element={<TechDomainsList />} />
             <Route path="/techdomains/:id" element={<TechDomainCard />} />
-            <Route path="/technologies"     element={<Technologies />} />
-            <Route path="/technologies/:id" element={<TechnologyCard />} />
-            <Route path="/users"            element={<Users />} />
+            <Route path="/users"         element={<Users />} />
             <Route path="/settings"      element={<Settings />} />
           </Routes>
         </main>
@@ -261,11 +207,11 @@ function Shell() {
 
 export default function App() {
   return (
-    <HashRouter>
+    <BrowserRouter>
       <TooltipProvider>
         <Toaster />
         <Shell />
       </TooltipProvider>
-    </HashRouter>
+    </BrowserRouter>
   );
 }
