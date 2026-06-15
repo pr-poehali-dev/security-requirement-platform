@@ -22,11 +22,11 @@ const STATUS_META: Record<string, { label: string; color: string }> = {
 
 // ── Цветовые темы Mermaid ────────────────────────────────────────────────────
 const MERMAID_THEMES = [
-  { value: "dark",    label: "Тёмная",      bg: "#1f2937" },
-  { value: "default", label: "Светлая",     bg: "#ffffff" },
-  { value: "forest",  label: "Лес",         bg: "#34495e" },
-  { value: "base",    label: "Базовая",     bg: "#f5f5f5" },
-  { value: "neutral", label: "Нейтральная", bg: "#e8e8e8" },
+  { value: "dark",     label: "Тёмная",    bg: "#1f2937" },
+  { value: "default",  label: "Светлая",   bg: "#ffffff" },
+  { value: "forest",   label: "Лес",       bg: "#34495e" },
+  { value: "base",     label: "Базовая",   bg: "#f5f5f5" },
+  { value: "neutral",  label: "Нейтральная", bg: "#e8e8e8" },
 ] as const;
 
 type MermaidTheme = typeof MERMAID_THEMES[number]["value"];
@@ -521,7 +521,7 @@ export default function TechnologyCard() {
                   onChange={e => setMermaidTitle(e.target.value)}
                 />
 
-                {/* Выбор цветовой схемы */}
+                {/* Выбор темы для редактора */}
                 <div>
                   <span className="text-xs text-dim block mb-1.5">Цветовая схема</span>
                   <div className="flex gap-2 flex-wrap">
@@ -600,7 +600,7 @@ export default function TechnologyCard() {
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="text-sm font-semibold text-foreground">{m.title}</h4>
                         <div className="flex items-center gap-3">
-                          {/* Переключатель темы */}
+                          {/* Переключатель темы на карточке схемы */}
                           <div className="flex gap-1">
                             {MERMAID_THEMES.map(t => (
                               <button

@@ -1,5 +1,7 @@
 import { useState } from "react";
 import Icon from "@/components/ui/icon";
+import ConfirmDeleteDialog from "@/components/ui/confirm-delete-dialog";
+import { userStore } from "@/data/userStore";
 
 const REQUIREMENTS = [
   { id: "REQ-001", title: "Многофакторная аутентификация", category: "Идентификация и аутентификация", severity: "critical", status: "active", source: "ГОСТ Р 57580", updated: "12.05.2026" },
@@ -22,25 +24,47 @@ const statusLabel = (s: string) => ({ active: "Активен", draft: "Черн
 const statusColor = (s: string) => ({ active: "var(--success)", draft: "var(--text-dim)", review: "var(--amber)", archived: "var(--text-dim)" }[s] || "var(--text-dim)");
 
 export default function Requirements() {
+  const [items, setItems] = useState(REQUIREMENTS);
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("Все");
   const [sevFilter, setSevFilter] = useState("Все");
   const [selected, setSelected] = useState<typeof REQUIREMENTS[0] | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
+  const isAdmin = userStore.get().role === "admin";
 
-  const filtered = REQUIREMENTS.filter(r => {
+  const filtered = items.filter(r => {
     const matchSearch = r.title.toLowerCase().includes(search.toLowerCase()) || r.id.toLowerCase().includes(search.toLowerCase());
     const matchCat = catFilter === "Все" || r.category === catFilter;
     const matchSev = sevFilter === "Все" || r.severity === sevFilter;
     return matchSearch && matchCat && matchSev;
   });
 
+  const handleDeleteClick = (id: string, title: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeleteTarget({ id, title });
+  };
+
+  const confirmDelete = () => {
+    if (!deleteTarget) return;
+    setItems(prev => prev.filter(r => r.id !== deleteTarget.id));
+    if (selected?.id === deleteTarget.id) setSelected(null);
+    setDeleteTarget(null);
+  };
+
   return (
     <div className="flex flex-col h-full">
+      <ConfirmDeleteDialog
+        open={!!deleteTarget}
+        title={deleteTarget?.title ?? ""}
+        description="Требование будет удалено из реестра."
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-semibold text-foreground">Требования ИБ</h1>
-          <p className="text-sm text-sec mt-0.5">{REQUIREMENTS.length} требований в реестре</p>
+          <p className="text-sm text-sec mt-0.5">{items.length} требований в реестре</p>
         </div>
         <button className="flex items-center gap-2 px-4 py-2 bg-amber text-primary-foreground text-sm font-medium rounded hover:opacity-90 transition-opacity">
           <Icon name="Plus" size={16} />
@@ -78,10 +102,10 @@ export default function Requirements() {
       {/* Stats row */}
       <div className="grid grid-cols-4 gap-3 mb-4">
         {[
-          { label: "Критических", count: REQUIREMENTS.filter(r => r.severity === "critical").length, cls: "tag-critical" },
-          { label: "Высоких", count: REQUIREMENTS.filter(r => r.severity === "high").length, cls: "tag-high" },
-          { label: "Средних", count: REQUIREMENTS.filter(r => r.severity === "medium").length, cls: "tag-medium" },
-          { label: "Низких", count: REQUIREMENTS.filter(r => r.severity === "low").length, cls: "tag-low" },
+          { label: "Критических", count: items.filter(r => r.severity === "critical").length, cls: "tag-critical" },
+          { label: "Высоких", count: items.filter(r => r.severity === "high").length, cls: "tag-high" },
+          { label: "Средних", count: items.filter(r => r.severity === "medium").length, cls: "tag-medium" },
+          { label: "Низких", count: items.filter(r => r.severity === "low").length, cls: "tag-low" },
         ].map(s => (
           <div key={s.label} className="bg-surface-1 border border-line rounded p-3 flex items-center justify-between">
             <span className="text-xs text-sec">{s.label}</span>
@@ -130,7 +154,17 @@ export default function Requirements() {
                 <td className="py-3 px-3 text-sec font-mono text-xs">{req.source}</td>
                 <td className="py-3 px-3 text-dim text-xs">{req.updated}</td>
                 <td className="py-3 px-3">
-                  <Icon name="ChevronRight" size={14} className="text-dim opacity-0 group-hover:opacity-100 transition-opacity" />
+                  {isAdmin ? (
+                    <button
+                      onClick={e => handleDeleteClick(req.id, req.title, e)}
+                      className="opacity-0 group-hover:opacity-100 text-dim hover:text-danger transition-all"
+                      title="Удалить"
+                    >
+                      <Icon name="Trash2" size={13} />
+                    </button>
+                  ) : (
+                    <Icon name="ChevronRight" size={14} className="text-dim opacity-0 group-hover:opacity-100 transition-opacity" />
+                  )}
                 </td>
               </tr>
             ))}

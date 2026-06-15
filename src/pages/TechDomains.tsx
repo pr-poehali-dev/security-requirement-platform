@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Icon from "@/components/ui/icon";
+import ConfirmDeleteDialog from "@/components/ui/confirm-delete-dialog";
 import { ORG_DOMAINS_INITIAL, type OrgDomain } from "@/data/orgDomainsStore";
+import { userStore } from "@/data/userStore";
 
 type TechStatus = "active" | "dev" | "inactive" | "archived";
 
@@ -95,14 +97,23 @@ function useStore() {
   return { domains: getDomains(), setDomains };
 }
 
+function useUser() {
+  const [, tick] = useState(0);
+  useState(() => { userStore.sub(() => tick(n => n + 1)); });
+  return userStore.get();
+}
+
 // ────────────────────────────────────────────
 // Список (таблица)
 // ────────────────────────────────────────────
 export function TechDomainsList() {
   const navigate = useNavigate();
   const { domains, setDomains } = useStore();
+  const user = useUser();
+  const isAdmin = user.role === "admin";
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   const filtered = domains.filter(d => {
     const q = search.toLowerCase();
@@ -126,13 +137,27 @@ export function TechDomainsList() {
     navigate(`/techdomains/${newId}`);
   };
 
-  const handleDelete = (id: string, e: React.MouseEvent) => {
+  const handleDeleteClick = (id: string, name: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setDomains(domains.filter(d => d.id !== id));
+    setDeleteTarget({ id, name });
+  };
+
+  const confirmDelete = () => {
+    if (!deleteTarget) return;
+    setDomains(domains.filter(d => d.id !== deleteTarget.id));
+    setDeleteTarget(null);
   };
 
   return (
     <div className="flex flex-col h-full">
+      <ConfirmDeleteDialog
+        open={!!deleteTarget}
+        title={deleteTarget?.name ?? ""}
+        description="Технический домен будет удалён из реестра."
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
+
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-semibold text-foreground">Технические домены</h1>
@@ -193,7 +218,7 @@ export function TechDomainsList() {
               <th className="text-left py-2.5 px-3 text-xs font-medium text-dim uppercase tracking-wider w-16">Версия</th>
               <th className="text-left py-2.5 px-3 text-xs font-medium text-dim uppercase tracking-wider">Орг. домены</th>
               <th className="text-left py-2.5 px-3 text-xs font-medium text-dim uppercase tracking-wider w-36">Обновлён</th>
-              <th className="w-10"></th>
+              {isAdmin && <th className="w-10"></th>}
             </tr>
           </thead>
           <tbody>
@@ -220,27 +245,28 @@ export function TechDomainsList() {
                       ? <span className="text-dim text-xs italic">—</span>
                       : d.orgDomainIds.map(oid => {
                           const org = ORG_DOMAINS_INITIAL.find(o => o.id === oid);
-                          return (
-                            <span key={oid} className="tag-info text-xs">{org?.name ?? oid}</span>
-                          );
+                          return <span key={oid} className="tag-info text-xs">{org?.name ?? oid}</span>;
                         })
                     }
                   </div>
                 </td>
                 <td className="py-3 px-3 text-dim text-xs font-mono">{d.updatedAt}</td>
-                <td className="py-3 px-3">
-                  <button
-                    onClick={e => handleDelete(d.id, e)}
-                    className="opacity-0 group-hover:opacity-100 text-dim hover:text-danger transition-all"
-                  >
-                    <Icon name="Trash2" size={13} />
-                  </button>
-                </td>
+                {isAdmin && (
+                  <td className="py-3 px-3">
+                    <button
+                      onClick={e => handleDeleteClick(d.id, d.name, e)}
+                      className="opacity-0 group-hover:opacity-100 text-dim hover:text-danger transition-all"
+                      title="Удалить"
+                    >
+                      <Icon name="Trash2" size={13} />
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={8} className="py-16 text-center text-dim text-sm">
+                <td colSpan={isAdmin ? 8 : 7} className="py-16 text-center text-dim text-sm">
                   <Icon name="SearchX" size={28} className="mx-auto mb-2 opacity-40" />
                   Домены не найдены
                 </td>
@@ -260,6 +286,8 @@ export function TechDomainCard() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { domains, setDomains } = useStore();
+  const user = useUser();
+  const isAdmin = user.role === "admin";
 
   const domain = domains.find(d => d.id === id);
 
@@ -272,6 +300,7 @@ export function TechDomainCard() {
       : null
   );
   const [dirty, setDirty] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   if (!domain || !edit) {
     return (
@@ -315,16 +344,20 @@ export function TechDomainCard() {
     setDirty(false);
   };
 
-  const handleDelete = () => {
+  const confirmDelete = () => {
     setDomains(domains.filter(d => d.id !== domain.id));
     navigate("/techdomains");
   };
 
-  // текущая версия (после сохранения) или будущая
-  const displayVersion = dirty ? domain.version : domain.version;
-
   return (
     <div className="flex flex-col h-full">
+      <ConfirmDeleteDialog
+        open={deleteOpen}
+        title={domain.name}
+        description="Технический домен будет удалён из реестра."
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteOpen(false)}
+      />
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm mb-6">
         <button
@@ -336,7 +369,7 @@ export function TechDomainCard() {
         </button>
         <Icon name="ChevronRight" size={13} className="text-dim" />
         <span className="font-mono text-xs text-steel">{domain.id}</span>
-        <span className="tag-info">v{displayVersion}</span>
+        <span className="tag-info">v{domain.version}</span>
         {dirty && <span className="tag-medium">Несохранено</span>}
       </div>
 
@@ -484,13 +517,20 @@ export function TechDomainCard() {
             >
               Сбросить
             </button>
-            <button
-              onClick={handleDelete}
-              className="ml-auto px-4 py-2 text-sm bg-surface-1 border border-line rounded text-dim hover:text-danger hover:border-danger/30 transition-colors flex items-center gap-2"
-            >
-              <Icon name="Trash2" size={14} />
-              Удалить
-            </button>
+            {isAdmin ? (
+              <button
+                onClick={() => setDeleteOpen(true)}
+                className="ml-auto px-4 py-2 text-sm bg-surface-1 border border-line rounded text-dim hover:text-danger hover:border-danger/30 transition-colors flex items-center gap-2"
+              >
+                <Icon name="Trash2" size={14} />
+                Удалить
+              </button>
+            ) : (
+              <div className="ml-auto flex items-center gap-1.5 text-xs text-dim px-3">
+                <Icon name="Lock" size={12} />
+                Удаление доступно только администратору
+              </div>
+            )}
           </div>
         </div>
       </div>

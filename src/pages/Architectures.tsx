@@ -1,5 +1,7 @@
 import { useState } from "react";
 import Icon from "@/components/ui/icon";
+import ConfirmDeleteDialog from "@/components/ui/confirm-delete-dialog";
+import { userStore } from "@/data/userStore";
 
 const ARCHITECTURES = [
   {
@@ -76,15 +78,37 @@ const ARCH_DIAGRAM = [
 ];
 
 export default function Architectures() {
+  const [items, setItems] = useState(ARCHITECTURES);
   const [selected, setSelected] = useState<typeof ARCHITECTURES[0] | null>(null);
   const [view, setView] = useState<"grid" | "list">("grid");
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
+  const isAdmin = userStore.get().role === "admin";
+
+  const handleDeleteClick = (id: string, title: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeleteTarget({ id, title });
+  };
+
+  const confirmDelete = () => {
+    if (!deleteTarget) return;
+    setItems(prev => prev.filter(a => a.id !== deleteTarget.id));
+    if (selected?.id === deleteTarget.id) setSelected(null);
+    setDeleteTarget(null);
+  };
 
   return (
     <div className="flex flex-col h-full">
+      <ConfirmDeleteDialog
+        open={!!deleteTarget}
+        title={deleteTarget?.title ?? ""}
+        description="Архитектура будет удалена из реестра."
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-semibold text-foreground">Архитектуры</h1>
-          <p className="text-sm text-sec mt-0.5">{ARCHITECTURES.length} типовых архитектур</p>
+          <p className="text-sm text-sec mt-0.5">{items.length} типовых архитектур</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex bg-surface-1 border border-line rounded overflow-hidden">
@@ -113,16 +137,25 @@ export default function Architectures() {
         <div className={`${selected ? "w-[420px] shrink-0" : "w-full"} overflow-auto`}>
           {view === "grid" && !selected ? (
             <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
-              {ARCHITECTURES.map((arch, i) => (
+              {items.map((arch, i) => (
                 <div
                   key={arch.id}
                   onClick={() => setSelected(arch)}
-                  className="bg-surface-1 border border-line rounded p-4 cursor-pointer hover:border-amber/40 transition-all group animate-fade-in"
+                  className="bg-surface-1 border border-line rounded p-4 cursor-pointer hover:border-amber/40 transition-all group animate-fade-in relative"
                   style={{ animationDelay: `${i * 0.06}s`, opacity: 0 }}
                 >
+                  {isAdmin && (
+                    <button
+                      onClick={e => handleDeleteClick(arch.id, arch.title, e)}
+                      className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 text-dim hover:text-danger transition-all z-10"
+                      title="Удалить"
+                    >
+                      <Icon name="Trash2" size={13} />
+                    </button>
+                  )}
                   <div className="flex items-start justify-between mb-3">
                     <span className="font-mono text-xs text-steel">{arch.id}</span>
-                    <span className="flex items-center gap-1 text-xs" style={{ color: statusColor(arch.status) }}>
+                    <span className="flex items-center gap-1 text-xs mr-5" style={{ color: statusColor(arch.status) }}>
                       <span className="status-dot" style={{ background: statusColor(arch.status) }}></span>
                       {statusLabel(arch.status)}
                     </span>
@@ -151,14 +184,15 @@ export default function Architectures() {
                   <th className="text-left py-2.5 px-3 text-xs font-medium text-dim uppercase tracking-wider w-24">Требований</th>
                   <th className="text-left py-2.5 px-3 text-xs font-medium text-dim uppercase tracking-wider w-28">Статус</th>
                   <th className="text-left py-2.5 px-3 text-xs font-medium text-dim uppercase tracking-wider w-28">Обновлена</th>
+                  {isAdmin && <th className="w-10"></th>}
                 </tr>
               </thead>
               <tbody>
-                {ARCHITECTURES.map((arch, i) => (
+                {items.map((arch, i) => (
                   <tr
                     key={arch.id}
                     onClick={() => setSelected(selected?.id === arch.id ? null : arch)}
-                    className={`border-b border-line/50 cursor-pointer transition-colors animate-fade-in ${selected?.id === arch.id ? "bg-surface-2" : "hover:bg-surface-1"}`}
+                    className={`border-b border-line/50 cursor-pointer transition-colors animate-fade-in group ${selected?.id === arch.id ? "bg-surface-2" : "hover:bg-surface-1"}`}
                     style={{ animationDelay: `${i * 0.04}s`, opacity: 0 }}
                   >
                     <td className="py-3 px-3 font-mono text-xs text-steel">{arch.id}</td>
@@ -172,6 +206,17 @@ export default function Architectures() {
                       </span>
                     </td>
                     <td className="py-3 px-3 text-dim text-xs">{arch.updated}</td>
+                    {isAdmin && (
+                      <td className="py-3 px-3">
+                        <button
+                          onClick={e => handleDeleteClick(arch.id, arch.title, e)}
+                          className="opacity-0 group-hover:opacity-100 text-dim hover:text-danger transition-all"
+                          title="Удалить"
+                        >
+                          <Icon name="Trash2" size={13} />
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
