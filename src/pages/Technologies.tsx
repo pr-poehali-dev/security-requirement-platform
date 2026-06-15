@@ -24,8 +24,12 @@ export default function Technologies() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const data = await technologiesApi.list();
-    setItems(data);
+    try {
+      const data = await technologiesApi.list();
+      setItems(Array.isArray(data) ? data : []);
+    } catch {
+      setItems([]);
+    }
     setLoading(false);
   }, []);
 

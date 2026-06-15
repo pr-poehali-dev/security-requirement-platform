@@ -21,13 +21,20 @@ export interface TechDetail extends TechItem {
 async function req(method: string, qs: Record<string, string> = {}, body?: unknown) {
   const url = new URL(BASE);
   Object.entries(qs).forEach(([k, v]) => url.searchParams.set(k, v));
-  const res = await fetch(url.toString(), {
-    method,
-    headers: { "Content-Type": "application/json" },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Ошибка сервера");
+  let res: Response;
+  try {
+    res = await fetch(url.toString(), {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    return undefined;
+  }
+  const text = await res.text();
+  let data: unknown;
+  try { data = JSON.parse(text); } catch { return undefined; }
+  if (!res.ok) throw new Error((data as Record<string, string>).error || "Ошибка сервера");
   return data;
 }
 

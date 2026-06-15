@@ -87,9 +87,15 @@ export default function TechnologyCard() {
   const load = useCallback(async () => {
     if (!id) return;
     setLoading(true);
-    const data = await technologiesApi.get(id);
-    setTech(data);
-    setForm({ name: data.name, owner: data.owner, status: data.status, description: data.description });
+    try {
+      const data = await technologiesApi.get(id);
+      if (data && data.id) {
+        setTech(data);
+        setForm({ name: data.name, owner: data.owner, status: data.status, description: data.description });
+      }
+    } catch {
+      // бэкенд недоступен
+    }
     setDirty(false);
     setLoading(false);
   }, [id]);
