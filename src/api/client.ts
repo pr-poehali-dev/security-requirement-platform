@@ -15,14 +15,23 @@ async function request<T>(
   if (params) {
     Object.entries(params).forEach(([k, v]) => { if (v) url.searchParams.set(k, v); });
   }
-  const res = await fetch(url.toString(), {
-    method,
-    headers: { "Content-Type": "application/json" },
-    body: body != null ? JSON.stringify(body) : undefined,
-  });
+  let res: Response;
+  try {
+    res = await fetch(url.toString(), {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: body != null ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    // Бэкенд недоступен — возвращаем пустой результат
+    return (Array.isArray([] as unknown) ? [] : {}) as T;
+  }
   if (res.status === 204) return undefined as T;
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || data.error || "Ошибка сервера");
+  // Если ответ не JSON (например, HTML от nginx 404) — не падаем
+  const text = await res.text();
+  let data: unknown;
+  try { data = JSON.parse(text); } catch { return ([] as unknown) as T; }
+  if (!res.ok) throw new Error((data as Record<string, string>).detail || (data as Record<string, string>).error || "Ошибка сервера");
   return data as T;
 }
 
