@@ -20,22 +20,34 @@ const STATUS_META: Record<string, { label: string; color: string }> = {
   archived: { label: "В архиве",     color: "var(--steel)" },
 };
 
+// ── Цветовые темы Mermaid ────────────────────────────────────────────────────
+const MERMAID_THEMES = [
+  { value: "dark",    label: "Тёмная",      bg: "#1f2937" },
+  { value: "default", label: "Светлая",     bg: "#ffffff" },
+  { value: "forest",  label: "Лес",         bg: "#34495e" },
+  { value: "base",    label: "Базовая",     bg: "#f5f5f5" },
+  { value: "neutral", label: "Нейтральная", bg: "#e8e8e8" },
+] as const;
+
+type MermaidTheme = typeof MERMAID_THEMES[number]["value"];
+
 // ── Mermaid рендерер ────────────────────────────────────────────────────────
-function MermaidDiagram({ content }: { content: string }) {
+function MermaidDiagram({ content, theme }: { content: string; theme: MermaidTheme }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!ref.current || !content.trim()) return;
     import("mermaid").then(({ default: mermaid }) => {
-      mermaid.initialize({ startOnLoad: false, theme: "dark" });
+      mermaid.initialize({ startOnLoad: false, theme });
       const id = `mmd-${Math.random().toString(36).slice(2)}`;
       mermaid.render(id, content).then(({ svg }) => {
         if (ref.current) ref.current.innerHTML = svg;
       }).catch(() => {
-        if (ref.current) ref.current.innerHTML = `<p class="text-danger text-xs">Ошибка синтаксиса Mermaid</p>`;
+        if (ref.current) ref.current.innerHTML = `<p style="color:red;font-size:12px">Ошибка синтаксиса Mermaid</p>`;
       });
     });
-  }, [content]);
-  return <div ref={ref} className="overflow-auto" />;
+  }, [content, theme]);
+  const themeBg = MERMAID_THEMES.find(t => t.value === theme)?.bg ?? "#1f2937";
+  return <div ref={ref} className="overflow-auto rounded p-2" style={{ background: themeBg }} />;
 }
 
 export default function TechnologyCard() {
@@ -65,6 +77,8 @@ export default function TechnologyCard() {
   const [mermaidContent, setMermaidContent] = useState("graph TD\n  A --> B");
   const [mermaidEditId, setMermaidEditId] = useState<number | null>(null);
   const [mermaidPreview, setMermaidPreview] = useState(false);
+  const [mermaidTheme, setMermaidTheme] = useState<MermaidTheme>("dark");
+  const [diagramThemes, setDiagramThemes] = useState<Record<number, MermaidTheme>>({});
 
   // file upload
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -506,6 +520,28 @@ export default function TechnologyCard() {
                   value={mermaidTitle}
                   onChange={e => setMermaidTitle(e.target.value)}
                 />
+
+                {/* Выбор цветовой схемы */}
+                <div>
+                  <span className="text-xs text-dim block mb-1.5">Цветовая схема</span>
+                  <div className="flex gap-2 flex-wrap">
+                    {MERMAID_THEMES.map(t => (
+                      <button
+                        key={t.value}
+                        onClick={() => setMermaidTheme(t.value)}
+                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-xs transition-all ${
+                          mermaidTheme === t.value
+                            ? "border-amber/60 text-amber"
+                            : "border-line text-sec hover:border-amber/30"
+                        }`}
+                      >
+                        <span className="w-3 h-3 rounded-full border border-white/20 shrink-0" style={{ background: t.bg }} />
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-dim">Mermaid код</span>
                   <button
@@ -517,8 +553,8 @@ export default function TechnologyCard() {
                   </button>
                 </div>
                 {mermaidPreview ? (
-                  <div className="bg-surface-2 border border-line rounded p-4 min-h-32">
-                    <MermaidDiagram content={mermaidContent} />
+                  <div className="border border-line rounded overflow-hidden min-h-32">
+                    <MermaidDiagram content={mermaidContent} theme={mermaidTheme} />
                   </div>
                 ) : (
                   <textarea
@@ -539,7 +575,7 @@ export default function TechnologyCard() {
                   </button>
                   {mermaidEditId !== null && (
                     <button
-                      onClick={() => { setMermaidEditId(null); setMermaidTitle("Схема"); setMermaidContent("graph TD\n  A --> B"); }}
+                      onClick={() => { setMermaidEditId(null); setMermaidTitle("Схема"); setMermaidContent("graph TD\n  A --> B"); setMermaidTheme("dark"); }}
                       className="px-4 py-2 text-sm bg-surface-2 border border-line rounded text-sec hover:text-foreground transition-colors"
                     >
                       Отмена
@@ -557,35 +593,56 @@ export default function TechnologyCard() {
               </div>
             ) : (
               <div className="space-y-4">
-                {tech.mermaid.map(m => (
-                  <div key={m.id} className="bg-surface-1 border border-line rounded p-4 max-w-3xl">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-sm font-semibold text-foreground">{m.title}</h4>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => { setMermaidEditId(m.id); setMermaidTitle(m.title); setMermaidContent(m.content); }}
-                          className="text-dim hover:text-amber transition-colors"
-                          title="Редактировать"
-                        >
-                          <Icon name="Edit" size={14} />
-                        </button>
-                        {isAdmin && (
+                {tech.mermaid.map(m => {
+                  const dTheme = diagramThemes[m.id] ?? "dark";
+                  return (
+                    <div key={m.id} className="bg-surface-1 border border-line rounded p-4 max-w-3xl">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-sm font-semibold text-foreground">{m.title}</h4>
+                        <div className="flex items-center gap-3">
+                          {/* Переключатель темы */}
+                          <div className="flex gap-1">
+                            {MERMAID_THEMES.map(t => (
+                              <button
+                                key={t.value}
+                                onClick={() => setDiagramThemes(p => ({ ...p, [m.id]: t.value }))}
+                                title={t.label}
+                                className={`w-4 h-4 rounded-full border transition-all ${
+                                  dTheme === t.value
+                                    ? "border-amber scale-110"
+                                    : "border-line/50 hover:border-amber/50 opacity-70 hover:opacity-100"
+                                }`}
+                                style={{ background: t.bg }}
+                              />
+                            ))}
+                          </div>
                           <button
-                            onClick={() => deleteMermaid(m.id)}
-                            className="text-dim hover:text-danger transition-colors"
-                            title="Удалить"
+                            onClick={() => { setMermaidEditId(m.id); setMermaidTitle(m.title); setMermaidContent(m.content); setMermaidTheme(dTheme); }}
+                            className="text-dim hover:text-amber transition-colors"
+                            title="Редактировать"
                           >
-                            <Icon name="Trash2" size={14} />
+                            <Icon name="Edit" size={14} />
                           </button>
-                        )}
+                          {isAdmin && (
+                            <button
+                              onClick={() => deleteMermaid(m.id)}
+                              className="text-dim hover:text-danger transition-colors"
+                              title="Удалить"
+                            >
+                              <Icon name="Trash2" size={14} />
+                            </button>
+                          )}
+                        </div>
                       </div>
+                      <div className="rounded overflow-hidden border border-line/30">
+                        <MermaidDiagram content={m.content} theme={dTheme} />
+                      </div>
+                      <p className="text-xs text-dim mt-2">
+                        Обновлена: {new Date(m.updated_at).toLocaleString("ru-RU")}
+                      </p>
                     </div>
-                    <MermaidDiagram content={m.content} />
-                    <p className="text-xs text-dim mt-2">
-                      Обновлена: {new Date(m.updated_at).toLocaleString("ru-RU")}
-                    </p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
