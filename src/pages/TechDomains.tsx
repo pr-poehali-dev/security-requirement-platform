@@ -163,13 +163,15 @@ export function TechDomainsList() {
           <h1 className="text-xl font-semibold text-foreground">Технические домены</h1>
           <p className="text-sm text-sec mt-0.5">{domains.length} доменов в реестре</p>
         </div>
-        <button
-          onClick={handleAdd}
-          className="flex items-center gap-2 px-4 py-2 bg-amber text-primary-foreground text-sm font-medium rounded hover:opacity-90 transition-opacity"
-        >
-          <Icon name="Plus" size={16} />
-          Добавить домен
-        </button>
+        {isAdmin && (
+          <button
+            onClick={handleAdd}
+            className="flex items-center gap-2 px-4 py-2 bg-amber text-primary-foreground text-sm font-medium rounded hover:opacity-90 transition-opacity"
+          >
+            <Icon name="Plus" size={16} />
+            Добавить домен
+          </button>
+        )}
       </div>
 
       {/* Filters */}
@@ -387,12 +389,16 @@ export function TechDomainCard() {
           {/* Название */}
           <div>
             <label className="text-xs text-dim block mb-1.5 uppercase tracking-wider">Название</label>
-            <input
-              className="w-full px-3 py-2 bg-surface-1 border border-line rounded text-sm text-foreground focus:outline-none focus:border-amber/50 transition-colors"
-              value={edit.name}
-              onChange={e => change("name", e.target.value)}
-              placeholder="Название технического домена"
-            />
+            {isAdmin ? (
+              <input
+                className="w-full px-3 py-2 bg-surface-1 border border-line rounded text-sm text-foreground focus:outline-none focus:border-amber/50 transition-colors"
+                value={edit.name}
+                onChange={e => change("name", e.target.value)}
+                placeholder="Название технического домена"
+              />
+            ) : (
+              <div className="px-3 py-2 bg-surface-1 border border-line rounded text-sm text-foreground">{domain.name || "—"}</div>
+            )}
           </div>
 
           {/* Версия */}
@@ -400,56 +406,72 @@ export function TechDomainCard() {
             <label className="text-xs text-dim block mb-1.5 uppercase tracking-wider">Версия</label>
             <div className="flex items-center gap-3">
               <div className="px-3 py-2 bg-surface-1 border border-line rounded text-sm font-mono text-steel cursor-default">
-                v{domain.version}{dirty && <span className="text-amber"> → v{domain.version + 1}</span>}
+                v{domain.version}
               </div>
-              <p className="text-xs text-dim">Увеличивается автоматически при сохранении</p>
             </div>
           </div>
 
           {/* Владелец */}
           <div>
             <label className="text-xs text-dim block mb-1.5 uppercase tracking-wider">Владелец</label>
-            <input
-              className="w-full px-3 py-2 bg-surface-1 border border-line rounded text-sm text-foreground focus:outline-none focus:border-amber/50 transition-colors"
-              value={edit.owner}
-              onChange={e => change("owner", e.target.value)}
-              placeholder="ФИО или подразделение"
-            />
+            {isAdmin ? (
+              <input
+                className="w-full px-3 py-2 bg-surface-1 border border-line rounded text-sm text-foreground focus:outline-none focus:border-amber/50 transition-colors"
+                value={edit.owner}
+                onChange={e => change("owner", e.target.value)}
+                placeholder="ФИО или подразделение"
+              />
+            ) : (
+              <div className="px-3 py-2 bg-surface-1 border border-line rounded text-sm text-foreground">{domain.owner || "—"}</div>
+            )}
           </div>
 
           {/* Статус */}
           <div>
             <label className="text-xs text-dim block mb-1.5 uppercase tracking-wider">Статус</label>
-            <div className="grid grid-cols-2 gap-2">
-              {STATUS_OPTIONS.map(o => (
-                <button
-                  key={o.value}
-                  onClick={() => change("status", o.value)}
-                  className={`flex items-center gap-2 px-3 py-2.5 rounded border text-sm transition-all ${
-                    edit.status === o.value
-                      ? "border-amber/50 bg-amber/10"
-                      : "border-line bg-surface-1 hover:border-amber/20"
-                  }`}
-                >
-                  <span className="status-dot shrink-0" style={{ background: statusMeta[o.value].color }}></span>
-                  <span className={edit.status === o.value ? "text-amber font-medium" : "text-sec"}>
-                    {o.label}
-                  </span>
-                </button>
-              ))}
-            </div>
+            {isAdmin ? (
+              <div className="grid grid-cols-2 gap-2">
+                {STATUS_OPTIONS.map(o => (
+                  <button
+                    key={o.value}
+                    onClick={() => change("status", o.value)}
+                    className={`flex items-center gap-2 px-3 py-2.5 rounded border text-sm transition-all ${
+                      edit.status === o.value
+                        ? "border-amber/50 bg-amber/10"
+                        : "border-line bg-surface-1 hover:border-amber/20"
+                    }`}
+                  >
+                    <span className="status-dot shrink-0" style={{ background: statusMeta[o.value].color }}></span>
+                    <span className={edit.status === o.value ? "text-amber font-medium" : "text-sec"}>
+                      {o.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 px-3 py-2 bg-surface-1 border border-line rounded text-sm">
+                <span className="status-dot" style={{ background: statusMeta[domain.status].color }} />
+                <span style={{ color: statusMeta[domain.status].color }}>{statusMeta[domain.status].label}</span>
+              </div>
+            )}
           </div>
 
           {/* Описание */}
           <div>
             <label className="text-xs text-dim block mb-1.5 uppercase tracking-wider">Описание</label>
-            <textarea
-              className="w-full px-3 py-2 bg-surface-1 border border-line rounded text-sm text-foreground focus:outline-none focus:border-amber/50 transition-colors resize-none"
-              rows={4}
-              value={edit.description}
-              onChange={e => change("description", e.target.value)}
-              placeholder="Описание технического домена..."
-            />
+            {isAdmin ? (
+              <textarea
+                className="w-full px-3 py-2 bg-surface-1 border border-line rounded text-sm text-foreground focus:outline-none focus:border-amber/50 transition-colors resize-none"
+                rows={4}
+                value={edit.description}
+                onChange={e => change("description", e.target.value)}
+                placeholder="Описание технического домена..."
+              />
+            ) : (
+              <div className="px-3 py-2 bg-surface-1 border border-line rounded text-sm text-foreground min-h-[96px] whitespace-pre-wrap">
+                {domain.description || <span className="text-dim italic">—</span>}
+              </div>
+            )}
           </div>
 
           {/* Организационные домены */}
@@ -460,7 +482,7 @@ export function TechDomainCard() {
             <div className="space-y-1.5">
               {(ORG_DOMAINS_INITIAL as OrgDomain[]).map(od => {
                 const selected = edit.orgDomainIds.includes(od.id);
-                return (
+                return isAdmin ? (
                   <button
                     key={od.id}
                     onClick={() => toggleOrgDomain(od.id)}
@@ -476,16 +498,30 @@ export function TechDomainCard() {
                       {selected && <Icon name="Check" size={10} className="text-white" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <span className={`font-medium ${selected ? "text-foreground" : "text-sec"}`}>
-                        {od.name}
-                      </span>
+                      <span className={`font-medium ${selected ? "text-foreground" : "text-sec"}`}>{od.name}</span>
                       <span className="ml-2 font-mono text-xs text-dim">{od.id}</span>
                     </div>
                     <span className="text-xs shrink-0" style={{ color: statusMeta[od.status as TechStatus]?.color }}>
                       {statusMeta[od.status as TechStatus]?.label}
                     </span>
                   </button>
-                );
+                ) : selected ? (
+                  <div
+                    key={od.id}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded border border-steel/50 bg-steel/10 text-sm"
+                  >
+                    <div className="w-4 h-4 rounded border bg-steel border-steel flex items-center justify-center shrink-0">
+                      <Icon name="Check" size={10} className="text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="font-medium text-foreground">{od.name}</span>
+                      <span className="ml-2 font-mono text-xs text-dim">{od.id}</span>
+                    </div>
+                    <span className="text-xs shrink-0" style={{ color: statusMeta[od.status as TechStatus]?.color }}>
+                      {statusMeta[od.status as TechStatus]?.label}
+                    </span>
+                  </div>
+                ) : null;
               })}
             </div>
             {edit.orgDomainIds.length > 0 && (
@@ -501,23 +537,23 @@ export function TechDomainCard() {
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2 pb-6">
-            <button
-              onClick={handleSave}
-              disabled={!dirty}
-              className="flex items-center gap-2 px-5 py-2 text-sm font-medium rounded bg-amber text-primary-foreground hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <Icon name="Save" size={14} />
-              Сохранить {dirty && `(v${domain.version + 1})`}
-            </button>
-            <button
-              onClick={handleReset}
-              disabled={!dirty}
-              className="px-4 py-2 text-sm bg-surface-1 border border-line rounded text-sec hover:text-foreground hover:border-amber/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Сбросить
-            </button>
-            {isAdmin ? (
+          {isAdmin ? (
+            <div className="flex gap-2 pb-6">
+              <button
+                onClick={handleSave}
+                disabled={!dirty}
+                className="flex items-center gap-2 px-5 py-2 text-sm font-medium rounded bg-amber text-primary-foreground hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Icon name="Save" size={14} />
+                Сохранить {dirty && `(v${domain.version + 1})`}
+              </button>
+              <button
+                onClick={handleReset}
+                disabled={!dirty}
+                className="px-4 py-2 text-sm bg-surface-1 border border-line rounded text-sec hover:text-foreground hover:border-amber/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Сбросить
+              </button>
               <button
                 onClick={() => setDeleteOpen(true)}
                 className="ml-auto px-4 py-2 text-sm bg-surface-1 border border-line rounded text-dim hover:text-danger hover:border-danger/30 transition-colors flex items-center gap-2"
@@ -525,13 +561,13 @@ export function TechDomainCard() {
                 <Icon name="Trash2" size={14} />
                 Удалить
               </button>
-            ) : (
-              <div className="ml-auto flex items-center gap-1.5 text-xs text-dim px-3">
-                <Icon name="Lock" size={12} />
-                Удаление доступно только администратору
-              </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 text-xs text-dim pb-6 pt-2 border-t border-line">
+              <Icon name="Lock" size={12} />
+              Режим просмотра — редактирование доступно администратору
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -276,12 +276,16 @@ export default function TechnologyCard() {
             {/* Название */}
             <div>
               <label className="text-xs text-dim block mb-1.5 uppercase tracking-wider">Название</label>
-              <input
-                className="w-full px-3 py-2 bg-surface-1 border border-line rounded text-sm text-foreground focus:outline-none focus:border-amber/50 transition-colors"
-                value={form.name}
-                onChange={e => change("name", e.target.value)}
-                placeholder="Название технологии"
-              />
+              {isAdmin ? (
+                <input
+                  className="w-full px-3 py-2 bg-surface-1 border border-line rounded text-sm text-foreground focus:outline-none focus:border-amber/50 transition-colors"
+                  value={form.name}
+                  onChange={e => change("name", e.target.value)}
+                  placeholder="Название технологии"
+                />
+              ) : (
+                <div className="px-3 py-2 bg-surface-1 border border-line rounded text-sm text-foreground">{tech.name || "—"}</div>
+              )}
             </div>
 
             {/* Версия */}
@@ -298,33 +302,44 @@ export default function TechnologyCard() {
             {/* Владелец */}
             <div>
               <label className="text-xs text-dim block mb-1.5 uppercase tracking-wider">Владелец</label>
-              <input
-                className="w-full px-3 py-2 bg-surface-1 border border-line rounded text-sm text-foreground focus:outline-none focus:border-amber/50 transition-colors"
-                value={form.owner}
-                onChange={e => change("owner", e.target.value)}
-                placeholder="ФИО или подразделение"
-              />
+              {isAdmin ? (
+                <input
+                  className="w-full px-3 py-2 bg-surface-1 border border-line rounded text-sm text-foreground focus:outline-none focus:border-amber/50 transition-colors"
+                  value={form.owner}
+                  onChange={e => change("owner", e.target.value)}
+                  placeholder="ФИО или подразделение"
+                />
+              ) : (
+                <div className="px-3 py-2 bg-surface-1 border border-line rounded text-sm text-foreground">{tech.owner || "—"}</div>
+              )}
             </div>
 
             {/* Статус */}
             <div>
               <label className="text-xs text-dim block mb-1.5 uppercase tracking-wider">Статус</label>
-              <div className="grid grid-cols-2 gap-2">
-                {STATUS_OPTIONS.map(o => (
-                  <button
-                    key={o.value}
-                    onClick={() => change("status", o.value)}
-                    className={`flex items-center gap-2 px-3 py-2.5 rounded border text-sm transition-all ${
-                      form.status === o.value
-                        ? "border-amber/50 bg-amber/10"
-                        : "border-line bg-surface-1 hover:border-amber/20"
-                    }`}
-                  >
-                    <span className="status-dot shrink-0" style={{ background: STATUS_META[o.value].color }} />
-                    <span className={form.status === o.value ? "text-amber font-medium" : "text-sec"}>{o.label}</span>
-                  </button>
-                ))}
-              </div>
+              {isAdmin ? (
+                <div className="grid grid-cols-2 gap-2">
+                  {STATUS_OPTIONS.map(o => (
+                    <button
+                      key={o.value}
+                      onClick={() => change("status", o.value)}
+                      className={`flex items-center gap-2 px-3 py-2.5 rounded border text-sm transition-all ${
+                        form.status === o.value
+                          ? "border-amber/50 bg-amber/10"
+                          : "border-line bg-surface-1 hover:border-amber/20"
+                      }`}
+                    >
+                      <span className="status-dot shrink-0" style={{ background: STATUS_META[o.value].color }} />
+                      <span className={form.status === o.value ? "text-amber font-medium" : "text-sec"}>{o.label}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 px-3 py-2 bg-surface-1 border border-line rounded text-sm">
+                  <span className="status-dot" style={{ background: statusMeta.color }} />
+                  <span style={{ color: statusMeta.color }}>{statusMeta.label}</span>
+                </div>
+              )}
             </div>
 
             {/* Теги */}
@@ -332,57 +347,64 @@ export default function TechnologyCard() {
               <label className="text-xs text-dim block mb-1.5 uppercase tracking-wider">Теги</label>
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {tech.tags.map(t => (
-                  <span key={t.id} className="flex items-center gap-1 tag-info pr-1">
+                  <span key={t.id} className={`flex items-center gap-1 tag-info ${isAdmin ? "pr-1" : ""}`}>
                     {t.tag}
-                    <button onClick={() => removeTag(t.id)} className="text-dim hover:text-danger transition-colors ml-0.5">
-                      <Icon name="X" size={11} />
-                    </button>
+                    {isAdmin && (
+                      <button onClick={() => removeTag(t.id)} className="text-dim hover:text-danger transition-colors ml-0.5">
+                        <Icon name="X" size={11} />
+                      </button>
+                    )}
                   </span>
                 ))}
+                {tech.tags.length === 0 && <span className="text-xs text-dim italic">—</span>}
               </div>
-              <div className="relative">
-                <input
-                  className="w-full px-3 py-2 bg-surface-1 border border-line rounded text-sm text-foreground focus:outline-none focus:border-amber/50 transition-colors"
-                  placeholder="Добавить тег..."
-                  value={tagInput}
-                  onChange={e => handleTagInput(e.target.value)}
-                  onFocus={() => tagInput && setShowSuggestions(true)}
-                  onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-                  onKeyDown={e => {
-                    if (e.key === "Enter") { e.preventDefault(); addTag(tagInput); }
-                    if (e.key === "," || e.key === " ") { e.preventDefault(); addTag(tagInput); }
-                  }}
-                />
-                {showSuggestions && tagSuggestions.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 z-20 mt-1 bg-surface-1 border border-line rounded shadow-xl overflow-hidden">
-                    {tagSuggestions.slice(0, 8).map(tag => (
-                      <button
-                        key={tag}
-                        onMouseDown={() => addTag(tag)}
-                        className="w-full text-left px-3 py-2 text-sm text-sec hover:bg-surface-2 hover:text-foreground transition-colors"
-                      >
-                        {tag}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <p className="text-xs text-dim mt-1">Enter или запятая для добавления</p>
+              {isAdmin && (
+                <div className="relative">
+                  <input
+                    className="w-full px-3 py-2 bg-surface-1 border border-line rounded text-sm text-foreground focus:outline-none focus:border-amber/50 transition-colors"
+                    placeholder="Добавить тег..."
+                    value={tagInput}
+                    onChange={e => handleTagInput(e.target.value)}
+                    onFocus={() => tagInput && setShowSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                    onKeyDown={e => {
+                      if (e.key === "Enter") { e.preventDefault(); addTag(tagInput); }
+                      if (e.key === "," || e.key === " ") { e.preventDefault(); addTag(tagInput); }
+                    }}
+                  />
+                  {showSuggestions && tagSuggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 z-20 mt-1 bg-surface-1 border border-line rounded shadow-xl overflow-hidden">
+                      {tagSuggestions.slice(0, 8).map(tag => (
+                        <button
+                          key={tag}
+                          onMouseDown={() => addTag(tag)}
+                          className="w-full text-left px-3 py-2 text-sm text-sec hover:bg-surface-2 hover:text-foreground transition-colors"
+                        >
+                          {tag}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-xs text-dim mt-1">Enter или запятая для добавления</p>
+                </div>
+              )}
             </div>
 
             {/* Описание */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs text-dim uppercase tracking-wider">Описание</label>
-                <button
-                  onClick={() => setMdPreview(p => !p)}
-                  className="flex items-center gap-1 text-xs text-dim hover:text-amber transition-colors"
-                >
-                  <Icon name={mdPreview ? "Edit" : "Eye"} size={12} />
-                  {mdPreview ? "Редактировать" : "Просмотр"}
-                </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => setMdPreview(p => !p)}
+                    className="flex items-center gap-1 text-xs text-dim hover:text-amber transition-colors"
+                  >
+                    <Icon name={mdPreview ? "Edit" : "Eye"} size={12} />
+                    {mdPreview ? "Редактировать" : "Просмотр"}
+                  </button>
+                )}
               </div>
-              {mdPreview ? (
+              {!isAdmin || mdPreview ? (
                 <div className="min-h-40 px-4 py-3 bg-surface-1 border border-line rounded prose prose-invert prose-sm max-w-none text-foreground">
                   <ReactMarkdown>{form.description || "_Описание пустое_"}</ReactMarkdown>
                 </div>
@@ -404,23 +426,23 @@ export default function TechnologyCard() {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-2 pb-6">
-              <button
-                onClick={handleSave}
-                disabled={!dirty || saving}
-                className="flex items-center gap-2 px-5 py-2 text-sm font-medium rounded bg-amber text-primary-foreground hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <Icon name="Save" size={14} />
-                {saving ? "Сохранение..." : `Сохранить${dirty ? ` (v${tech.version + 1})` : ""}`}
-              </button>
-              <button
-                onClick={() => { setForm({ name: tech.name, owner: tech.owner, status: tech.status, description: tech.description }); setDirty(false); }}
-                disabled={!dirty}
-                className="px-4 py-2 text-sm bg-surface-1 border border-line rounded text-sec hover:text-foreground hover:border-amber/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                Сбросить
-              </button>
-              {isAdmin ? (
+            {isAdmin ? (
+              <div className="flex gap-2 pb-6">
+                <button
+                  onClick={handleSave}
+                  disabled={!dirty || saving}
+                  className="flex items-center gap-2 px-5 py-2 text-sm font-medium rounded bg-amber text-primary-foreground hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <Icon name="Save" size={14} />
+                  {saving ? "Сохранение..." : `Сохранить${dirty ? ` (v${tech.version + 1})` : ""}`}
+                </button>
+                <button
+                  onClick={() => { setForm({ name: tech.name, owner: tech.owner, status: tech.status, description: tech.description }); setDirty(false); }}
+                  disabled={!dirty}
+                  className="px-4 py-2 text-sm bg-surface-1 border border-line rounded text-sec hover:text-foreground hover:border-amber/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Сбросить
+                </button>
                 <button
                   onClick={() => setDeleteOpen(true)}
                   className="ml-auto px-4 py-2 text-sm bg-surface-1 border border-line rounded text-dim hover:text-danger hover:border-danger/30 transition-colors flex items-center gap-2"
@@ -428,48 +450,50 @@ export default function TechnologyCard() {
                   <Icon name="Trash2" size={14} />
                   Удалить
                 </button>
-              ) : (
-                <div className="ml-auto flex items-center gap-1.5 text-xs text-dim px-3">
-                  <Icon name="Lock" size={12} />
-                  Удаление доступно только администратору
-                </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 text-xs text-dim pb-6 pt-2 border-t border-line">
+                <Icon name="Lock" size={12} />
+                Режим просмотра — редактирование доступно администратору
+              </div>
+            )}
           </div>
         )}
 
         {/* ── TAB: Файлы ────────────────────────────────────────────────────── */}
         {activeTab === "files" && (
           <div className="max-w-2xl space-y-4">
-            <div
-              className="border-2 border-dashed border-line rounded-lg p-8 text-center cursor-pointer hover:border-amber/40 transition-colors group"
-              onClick={() => fileInputRef.current?.click()}
-              onDragOver={e => e.preventDefault()}
-              onDrop={e => {
-                e.preventDefault();
-                const file = e.dataTransfer.files[0];
-                if (file) {
-                  const fakeEvent = { target: { files: [file] } } as unknown as React.ChangeEvent<HTMLInputElement>;
-                  handleFileUpload(fakeEvent);
-                }
-              }}
-            >
-              <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} />
-              {uploading ? (
-                <div className="flex items-center justify-center gap-2 text-dim">
-                  <Icon name="Loader" size={20} className="animate-spin" />
-                  Загрузка...
-                </div>
-              ) : (
-                <>
-                  <Icon name="Upload" size={28} className="mx-auto mb-2 text-dim group-hover:text-amber transition-colors" />
-                  <p className="text-sm text-sec group-hover:text-foreground transition-colors">
-                    Перетащите файл или нажмите для выбора
-                  </p>
-                  <p className="text-xs text-dim mt-1">Любой тип файлов</p>
-                </>
-              )}
-            </div>
+            {isAdmin && (
+              <div
+                className="border-2 border-dashed border-line rounded-lg p-8 text-center cursor-pointer hover:border-amber/40 transition-colors group"
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={e => e.preventDefault()}
+                onDrop={e => {
+                  e.preventDefault();
+                  const file = e.dataTransfer.files[0];
+                  if (file) {
+                    const fakeEvent = { target: { files: [file] } } as unknown as React.ChangeEvent<HTMLInputElement>;
+                    handleFileUpload(fakeEvent);
+                  }
+                }}
+              >
+                <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} />
+                {uploading ? (
+                  <div className="flex items-center justify-center gap-2 text-dim">
+                    <Icon name="Loader" size={20} className="animate-spin" />
+                    Загрузка...
+                  </div>
+                ) : (
+                  <>
+                    <Icon name="Upload" size={28} className="mx-auto mb-2 text-dim group-hover:text-amber transition-colors" />
+                    <p className="text-sm text-sec group-hover:text-foreground transition-colors">
+                      Перетащите файл или нажмите для выбора
+                    </p>
+                    <p className="text-xs text-dim mt-1">Любой тип файлов</p>
+                  </>
+                )}
+              </div>
+            )}
 
             {tech.files.length === 0 ? (
               <div className="text-center py-8 text-dim text-sm">
@@ -514,82 +538,81 @@ export default function TechnologyCard() {
         {/* ── TAB: Mermaid схемы ────────────────────────────────────────────── */}
         {activeTab === "mermaid" && (
           <div className="space-y-5">
-            {/* Editor */}
-            <div className="max-w-2xl bg-surface-1 border border-line rounded p-4">
-              <h3 className="text-sm font-semibold text-foreground mb-3">
-                {mermaidEditId !== null ? "Редактирование схемы" : "Новая схема"}
-              </h3>
-              <div className="space-y-3">
-                <input
-                  className="w-full px-3 py-2 bg-surface-2 border border-line rounded text-sm text-foreground focus:outline-none focus:border-amber/50 transition-colors"
-                  placeholder="Название схемы"
-                  value={mermaidTitle}
-                  onChange={e => setMermaidTitle(e.target.value)}
-                />
-
-                {/* Выбор темы для редактора */}
-                <div>
-                  <span className="text-xs text-dim block mb-1.5">Цветовая схема</span>
-                  <div className="flex gap-2 flex-wrap">
-                    {MERMAID_THEMES.map(t => (
-                      <button
-                        key={t.value}
-                        onClick={() => setMermaidTheme(t.value)}
-                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-xs transition-all ${
-                          mermaidTheme === t.value
-                            ? "border-amber/60 text-amber"
-                            : "border-line text-sec hover:border-amber/30"
-                        }`}
-                      >
-                        <span className="w-3 h-3 rounded-full border border-white/20 shrink-0" style={{ background: t.bg }} />
-                        {t.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-dim">Mermaid код</span>
-                  <button
-                    onClick={() => setMermaidPreview(p => !p)}
-                    className="flex items-center gap-1 text-xs text-dim hover:text-amber transition-colors"
-                  >
-                    <Icon name={mermaidPreview ? "Code" : "Eye"} size={12} />
-                    {mermaidPreview ? "Код" : "Предпросмотр"}
-                  </button>
-                </div>
-                {mermaidPreview ? (
-                  <div className="border border-line rounded overflow-hidden min-h-32">
-                    <MermaidDiagram content={mermaidContent} theme={mermaidTheme} />
-                  </div>
-                ) : (
-                  <textarea
-                    className="w-full px-3 py-2 bg-surface-2 border border-line rounded text-sm text-foreground font-mono focus:outline-none focus:border-amber/50 transition-colors resize-none"
-                    rows={8}
-                    value={mermaidContent}
-                    onChange={e => setMermaidContent(e.target.value)}
-                    placeholder="graph TD&#10;  A[Начало] --> B[Конец]"
+            {/* Editor — только для admin */}
+            {isAdmin && (
+              <div className="max-w-2xl bg-surface-1 border border-line rounded p-4">
+                <h3 className="text-sm font-semibold text-foreground mb-3">
+                  {mermaidEditId !== null ? "Редактирование схемы" : "Новая схема"}
+                </h3>
+                <div className="space-y-3">
+                  <input
+                    className="w-full px-3 py-2 bg-surface-2 border border-line rounded text-sm text-foreground focus:outline-none focus:border-amber/50 transition-colors"
+                    placeholder="Название схемы"
+                    value={mermaidTitle}
+                    onChange={e => setMermaidTitle(e.target.value)}
                   />
-                )}
-                <div className="flex gap-2">
-                  <button
-                    onClick={saveMermaid}
-                    className="flex items-center gap-2 px-4 py-2 text-sm bg-amber text-primary-foreground rounded font-medium hover:opacity-90 transition-opacity"
-                  >
-                    <Icon name="Save" size={13} />
-                    {mermaidEditId !== null ? "Обновить" : "Сохранить"}
-                  </button>
-                  {mermaidEditId !== null && (
+                  <div>
+                    <span className="text-xs text-dim block mb-1.5">Цветовая схема</span>
+                    <div className="flex gap-2 flex-wrap">
+                      {MERMAID_THEMES.map(t => (
+                        <button
+                          key={t.value}
+                          onClick={() => setMermaidTheme(t.value)}
+                          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-xs transition-all ${
+                            mermaidTheme === t.value
+                              ? "border-amber/60 text-amber"
+                              : "border-line text-sec hover:border-amber/30"
+                          }`}
+                        >
+                          <span className="w-3 h-3 rounded-full border border-white/20 shrink-0" style={{ background: t.bg }} />
+                          {t.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-dim">Mermaid код</span>
                     <button
-                      onClick={() => { setMermaidEditId(null); setMermaidTitle("Схема"); setMermaidContent("graph TD\n  A --> B"); setMermaidTheme("dark"); }}
-                      className="px-4 py-2 text-sm bg-surface-2 border border-line rounded text-sec hover:text-foreground transition-colors"
+                      onClick={() => setMermaidPreview(p => !p)}
+                      className="flex items-center gap-1 text-xs text-dim hover:text-amber transition-colors"
                     >
-                      Отмена
+                      <Icon name={mermaidPreview ? "Code" : "Eye"} size={12} />
+                      {mermaidPreview ? "Код" : "Предпросмотр"}
                     </button>
+                  </div>
+                  {mermaidPreview ? (
+                    <div className="border border-line rounded overflow-hidden min-h-32">
+                      <MermaidDiagram content={mermaidContent} theme={mermaidTheme} />
+                    </div>
+                  ) : (
+                    <textarea
+                      className="w-full px-3 py-2 bg-surface-2 border border-line rounded text-sm text-foreground font-mono focus:outline-none focus:border-amber/50 transition-colors resize-none"
+                      rows={8}
+                      value={mermaidContent}
+                      onChange={e => setMermaidContent(e.target.value)}
+                      placeholder="graph TD&#10;  A[Начало] --> B[Конец]"
+                    />
                   )}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={saveMermaid}
+                      className="flex items-center gap-2 px-4 py-2 text-sm bg-amber text-primary-foreground rounded font-medium hover:opacity-90 transition-opacity"
+                    >
+                      <Icon name="Save" size={13} />
+                      {mermaidEditId !== null ? "Обновить" : "Сохранить"}
+                    </button>
+                    {mermaidEditId !== null && (
+                      <button
+                        onClick={() => { setMermaidEditId(null); setMermaidTitle("Схема"); setMermaidContent("graph TD\n  A --> B"); setMermaidTheme("dark"); }}
+                        className="px-4 py-2 text-sm bg-surface-2 border border-line rounded text-sec hover:text-foreground transition-colors"
+                      >
+                        Отмена
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* List of diagrams */}
             {tech.mermaid.length === 0 ? (
@@ -606,7 +629,6 @@ export default function TechnologyCard() {
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="text-sm font-semibold text-foreground">{m.title}</h4>
                         <div className="flex items-center gap-3">
-                          {/* Переключатель темы на карточке схемы */}
                           <div className="flex gap-1">
                             {MERMAID_THEMES.map(t => (
                               <button
@@ -622,21 +644,23 @@ export default function TechnologyCard() {
                               />
                             ))}
                           </div>
-                          <button
-                            onClick={() => { setMermaidEditId(m.id); setMermaidTitle(m.title); setMermaidContent(m.content); setMermaidTheme(dTheme); }}
-                            className="text-dim hover:text-amber transition-colors"
-                            title="Редактировать"
-                          >
-                            <Icon name="Edit" size={14} />
-                          </button>
                           {isAdmin && (
-                            <button
-                              onClick={() => deleteMermaid(m.id)}
-                              className="text-dim hover:text-danger transition-colors"
-                              title="Удалить"
-                            >
-                              <Icon name="Trash2" size={14} />
-                            </button>
+                            <>
+                              <button
+                                onClick={() => { setMermaidEditId(m.id); setMermaidTitle(m.title); setMermaidContent(m.content); setMermaidTheme(dTheme); }}
+                                className="text-dim hover:text-amber transition-colors"
+                                title="Редактировать"
+                              >
+                                <Icon name="Edit" size={14} />
+                              </button>
+                              <button
+                                onClick={() => deleteMermaid(m.id)}
+                                className="text-dim hover:text-danger transition-colors"
+                                title="Удалить"
+                              >
+                                <Icon name="Trash2" size={14} />
+                              </button>
+                            </>
                           )}
                         </div>
                       </div>

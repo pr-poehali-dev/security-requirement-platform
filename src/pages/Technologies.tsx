@@ -70,13 +70,15 @@ export default function Technologies() {
           <h1 className="text-xl font-semibold text-foreground">Технологии</h1>
           <p className="text-sm text-sec mt-0.5">{items.length} технологий в реестре</p>
         </div>
-        <button
-          onClick={handleAdd}
-          className="flex items-center gap-2 px-4 py-2 bg-amber text-primary-foreground text-sm font-medium rounded hover:opacity-90 transition-opacity"
-        >
-          <Icon name="Plus" size={16} />
-          Добавить технологию
-        </button>
+        {isAdmin && (
+          <button
+            onClick={handleAdd}
+            className="flex items-center gap-2 px-4 py-2 bg-amber text-primary-foreground text-sm font-medium rounded hover:opacity-90 transition-opacity"
+          >
+            <Icon name="Plus" size={16} />
+            Добавить технологию
+          </button>
+        )}
       </div>
 
       {/* Filters */}
